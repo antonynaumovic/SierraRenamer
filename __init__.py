@@ -76,7 +76,7 @@ class Renamer_PT_Panel(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_label="Sierra Renamer"
-    bl_category="Renamer"
+    bl_category="Sierra"
 
 
     def draw(self, context):
@@ -85,7 +85,7 @@ class Renamer_PT_Panel(bpy.types.Panel):
         layout = self.layout
 
         renamebox = layout.box()
-        renamebox.label(text="Sierra Renamer")
+        renamebox.label(text="Rename")
         row = renamebox.prop(mytool, "string_prefix")
         row = renamebox.prop(mytool, "enum_suffixAction")
         if mytool.enum_suffixAction == "1":
@@ -98,7 +98,9 @@ class Renamer_PT_Panel(bpy.types.Panel):
         row = renamebox.prop(mytool, "string_rename")
         row = renamebox.row()
         row.operator("object.sierrarename", text="Rename")
-        row.operator("object.showconcave", text="Show Concave")
+        toolbox = layout.box()
+        toolbox.label(text="Tools")
+        toolbox.operator("object.showconcave", text="Show Concave")
 
 
 class SierraRenamer_OT_Operator(bpy.types.Operator):
@@ -154,8 +156,6 @@ class ShowConcave_OT_Operator(bpy.types.Operator):
                     for v in ngon.verts[3:]])
                 if ngon.select: 
                     bpy.ops.mesh.normals_make_consistent(inside=True)
-
-                print(([distance_point_to_plane(v.co, co, norm) for v in ngon.verts[3:]]))
 
             bmesh.update_edit_mesh(mesh)
             bpy.ops.object.mode_set(mode='OBJECT')
