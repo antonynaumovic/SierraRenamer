@@ -28,7 +28,7 @@ bl_info = {
     "author" : "Ant",
     "description" : "",
     "blender" : (3, 8, 0),
-    "version" : (0, 0, 3),
+    "version" : (0, 0, 4),
     "location" : "",
     "warning" : "",
     "category" : "Mesh"
@@ -63,6 +63,16 @@ class MySettings(bpy.types.PropertyGroup):
         ("3", "String + Number", "")
         ],
         default="2"
+    )
+    enum_outlineMode: bpy.props.EnumProperty(
+        name= "Outline",
+        description="Outline Mode",
+        items=[
+        ("DASH", "Dash", "DASH"),
+        ("BLACK", "Black", "BLACK"),
+        ("WHITE", "White", "WHITE"),
+        ],
+        default="BLACK"
     )
 
     string_rename : bpy.props.StringProperty(
@@ -101,6 +111,88 @@ class Renamer_PT_Panel(bpy.types.Panel):
         toolbox = layout.box()
         toolbox.label(text="Tools")
         toolbox.operator("object.showconcave", text="Show Concave")
+
+class SierraUV_PT_Panel(bpy.types.Panel):
+    bl_idname="UV_T_PT_Panel"
+    bl_space_type = "IMAGE_EDITOR"
+    bl_region_type = "UI"
+    bl_label="Sierra Renamer"
+    bl_category="Sierra"
+
+
+    def draw(self, context):
+        scene = context.scene
+        mytool = scene.my_tool
+        layout = self.layout
+
+        toolbox = layout.box()
+        toolbox.label(text="Tools")
+        toolbox.operator("uv.sierrastack", text="Stack Unstack")
+        toolbox.operator("uv.sierratogglelines", text="Toggle Outlines")
+        toggleRow = toolbox.row()
+        toggleRow = toggleRow.prop(mytool, "enum_outlineMode", expand=True)
+
+
+class SierraToggleUVLines_OT_Operator(bpy.types.Operator):
+    bl_idname= "uv.sierratogglelines"
+    bl_label="sierratogglelines"
+    bl_description="Toggles Between Outline and Black"
+
+    def execute(self, context):
+        scene = context.scene
+        mytool = scene.my_tool
+        OBs = bpy.context.selected_objects
+        screen = bpy.context.screen
+        editor = bpy.context.area.spaces[0].uv_editor
+        
+
+        if editor.edge_display_type == "OUTLINE":
+            editor.edge_display_type = mytool.enum_outlineMode
+        else:
+            editor.edge_display_type = "OUTLINE"
+        return {"FINISHED"}
+
+
+class SierraStackUnstack_OT_Operator(bpy.types.Operator):
+    bl_idname= "uv.sierrastack"
+    bl_label="Sierra Stacker"
+    bl_description="Stacks then unstacks"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    margin: bpy.props.FloatProperty(
+        name="Margin",
+        default=0.005,
+        min=0,
+        max=1,
+        step=0.01,
+        precision=3,
+    )
+
+    axis: bpy.props.EnumProperty(
+        items=[
+            ("U", "X", "", 0),
+            ("-U", "-X", "", 1),
+            ("V", "Y", "", 2),
+            ("-V", "-Y", "", 3),
+        ],
+        name="Axis",
+    )
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.prop(self, "margin")
+        layout.prop(self, "axis", expand=True)
+
+
+    def execute(self, context):
+        scene = context.scene
+        mytool = scene.my_tool
+        OBs = bpy.context.selected_objects
+        bpy.ops.uv.toolkit_stack_islands()
+        bpy.ops.uv.toolkit_unstack_islands(margin=self.margin, axis=self.axis)
+
+        return {"FINISHED"}
 
 
 class SierraRenamer_OT_Operator(bpy.types.Operator):
@@ -165,7 +257,7 @@ class ShowConcave_OT_Operator(bpy.types.Operator):
 
 
 
-classes = (MySettings, SierraRenamer_OT_Operator, Renamer_PT_Panel, ShowConcave_OT_Operator)
+classes = (MySettings, SierraRenamer_OT_Operator, Renamer_PT_Panel, SierraUV_PT_Panel, ShowConcave_OT_Operator, SierraStackUnstack_OT_Operator, SierraToggleUVLines_OT_Operator)
 
 def register():
     for cls in classes:
