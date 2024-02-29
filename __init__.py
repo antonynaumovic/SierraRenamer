@@ -178,6 +178,10 @@ class SierraStackUnstack_OT_Operator(bpy.types.Operator):
         name="Axis",
     )
 
+    @classmethod
+    def poll(cls, context):
+        return context.mode == 'EDIT_MESH'
+
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
