@@ -28,7 +28,7 @@ bl_info = {
     "author" : "Ant",
     "description" : "",
     "blender" : (3, 8, 0),
-    "version" : (0, 0, 4),
+    "version" : (0, 0, 5),
     "location" : "",
     "warning" : "",
     "category" : "Mesh"
@@ -81,11 +81,22 @@ class MySettings(bpy.types.PropertyGroup):
         default="object"
     )
 
+    vector_creaseProperties : bpy.props.FloatVectorProperty(
+        name="Crease Properties",
+        description="Floor, Maximum, Tolerance",
+        default=(0, 1, 0.1),
+        min=0,
+        max=1,
+
+    )
+
+
+
 class Renamer_PT_Panel(bpy.types.Panel):
     bl_idname="VIEW3D_T_PT_Panel"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
-    bl_label="Sierra Renamer"
+    bl_label="Sierra Tools"
     bl_category="Sierra"
 
 
@@ -108,9 +119,21 @@ class Renamer_PT_Panel(bpy.types.Panel):
         row = renamebox.prop(mytool, "string_rename")
         row = renamebox.row()
         row.operator("object.sierrarename", text="Rename")
+
+        creasebox = layout.box()
+        creasebox.label(text="Creases")
+
+        row = creasebox.row()
+        row.prop(mytool, "vector_creaseProperties", text="Min", slider=True, expand=True, index=0)
+        row.prop(mytool, "vector_creaseProperties", text="Max", slider=True, expand=True, index=1)
+        creasebox.prop(mytool, "vector_creaseProperties", text="Tolerance", slider=True, index=2)
+        creasebox.operator("object.sierratogglecrease", text="Toggle Creases")
+
         toolbox = layout.box()
         toolbox.label(text="Tools")
         toolbox.operator("object.showconcave", text="Show Concave")
+
+
 
 class SierraUV_PT_Panel(bpy.types.Panel):
     bl_idname="UV_T_PT_Panel"
@@ -152,6 +175,33 @@ class SierraToggleUVLines_OT_Operator(bpy.types.Operator):
             editor.edge_display_type = "OUTLINE"
         return {"FINISHED"}
 
+class SierraToggleCrease_OT_Operator(bpy.types.Operator):
+    bl_idname= "object.sierratogglecrease"
+    bl_label="sierratogglecrease"
+    bl_description="Toggles Creasing"
+
+    @classmethod
+    def poll(cls, context):
+        return context.mode == 'EDIT_MESH'
+
+    def execute(self, context):
+        scene = context.scene
+        mytool = scene.my_tool
+        OBs = bpy.context.selected_objects
+
+        bm = bmesh.from_edit_mesh(bpy.context.object.data)
+        crease_layer = bm.edges.layers.float.get("crease_edge")
+        print(crease_layer)
+        for e in bm.edges:
+            if e.select:
+                if e[crease_layer] < mytool.vector_creaseProperties[0] + mytool.vector_creaseProperties[2]:
+                    e[crease_layer] = mytool.vector_creaseProperties[1]
+                elif e[crease_layer] > mytool.vector_creaseProperties[1] - mytool.vector_creaseProperties[2]:
+                    e[crease_layer] = mytool.vector_creaseProperties[0]
+        bmesh.update_edit_mesh(bpy.context.object.data)
+        bm.free()
+
+        return {"FINISHED"}
 
 class SierraStackUnstack_OT_Operator(bpy.types.Operator):
     bl_idname= "uv.sierrastack"
@@ -261,7 +311,7 @@ class ShowConcave_OT_Operator(bpy.types.Operator):
 
 
 
-classes = (MySettings, SierraRenamer_OT_Operator, Renamer_PT_Panel, SierraUV_PT_Panel, ShowConcave_OT_Operator, SierraStackUnstack_OT_Operator, SierraToggleUVLines_OT_Operator)
+classes = (MySettings, SierraRenamer_OT_Operator, Renamer_PT_Panel, SierraUV_PT_Panel, ShowConcave_OT_Operator, SierraStackUnstack_OT_Operator, SierraToggleUVLines_OT_Operator, SierraToggleCrease_OT_Operator)
 
 def register():
     for cls in classes:
