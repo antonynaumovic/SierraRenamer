@@ -189,17 +189,25 @@ class SierraToggleCrease_OT_Operator(bpy.types.Operator):
         mytool = scene.my_tool
         OBs = bpy.context.selected_objects
 
+
         bm = bmesh.from_edit_mesh(bpy.context.object.data)
         crease_layer = bm.edges.layers.float.get("crease_edge")
-        print(crease_layer)
+        if not crease_layer:
+           bpy.ops.geometry.attribute_add(name="crease_edge", domain='EDGE')
+           bmesh.update_edit_mesh(bpy.context.object.data)
+           bm.free()   
+           bm = bmesh.from_edit_mesh(bpy.context.object.data)
+           crease_layer = bm.edges.layers.float.get("crease_edge")
+        
         for e in bm.edges:
             if e.select:
                 if e[crease_layer] < mytool.vector_creaseProperties[0] + mytool.vector_creaseProperties[2]:
                     e[crease_layer] = mytool.vector_creaseProperties[1]
                 elif e[crease_layer] > mytool.vector_creaseProperties[1] - mytool.vector_creaseProperties[2]:
                     e[crease_layer] = mytool.vector_creaseProperties[0]
+
         bmesh.update_edit_mesh(bpy.context.object.data)
-        bm.free()
+        bm.free()   
 
         return {"FINISHED"}
 
