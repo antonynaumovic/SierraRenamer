@@ -27,8 +27,8 @@ bl_info = {
     "name" : "SierraRenamer",
     "author" : "Ant",
     "description" : "",
-    "blender" : (3, 8, 0),
-    "version" : (0, 0, 5),
+    "blender" : (4, 0, 0),
+    "version" : (0, 0, 6),
     "location" : "",
     "warning" : "",
     "category" : "Mesh"
@@ -189,25 +189,37 @@ class SierraToggleCrease_OT_Operator(bpy.types.Operator):
         mytool = scene.my_tool
         OBs = bpy.context.selected_objects
 
+        ver = bpy.app.version[0]
+        if (ver == 3):
+            bm = bmesh.from_edit_mesh(bpy.context.edit_object.data)
+            crease_layer = bm.edges.layers.crease.verify()
+            for e in bm.edges:
+                if e.select == True:
+                    if e[crease_layer] < mytool.vector_creaseProperties[0] + mytool.vector_creaseProperties[2]:
+                        e[crease_layer] = mytool.vector_creaseProperties[1]
+                    elif e[crease_layer] > mytool.vector_creaseProperties[1] - mytool.vector_creaseProperties[2]:
+                        e[crease_layer] = mytool.vector_creaseProperties[0]
+            bmesh.update_edit_mesh(bpy.context.object.data)
+            bm.free()
+        else:
+            bm = bmesh.from_edit_mesh(bpy.context.object.data)
+            crease_layer = bm.edges.layers.float.get("crease_edge")
+            if not crease_layer:
+                bpy.ops.geometry.attribute_add(name="crease_edge", domain='EDGE')
+                bmesh.update_edit_mesh(bpy.context.object.data)
+                bm.free()   
+                bm = bmesh.from_edit_mesh(bpy.context.object.data)
+                crease_layer = bm.edges.layers.float.get("crease_edge")
+            
+            for e in bm.edges:
+                if e.select:
+                    if e[crease_layer] < mytool.vector_creaseProperties[0] + mytool.vector_creaseProperties[2]:
+                        e[crease_layer] = mytool.vector_creaseProperties[1]
+                    elif e[crease_layer] > mytool.vector_creaseProperties[1] - mytool.vector_creaseProperties[2]:
+                        e[crease_layer] = mytool.vector_creaseProperties[0]
 
-        bm = bmesh.from_edit_mesh(bpy.context.object.data)
-        crease_layer = bm.edges.layers.float.get("crease_edge")
-        if not crease_layer:
-           bpy.ops.geometry.attribute_add(name="crease_edge", domain='EDGE')
-           bmesh.update_edit_mesh(bpy.context.object.data)
-           bm.free()   
-           bm = bmesh.from_edit_mesh(bpy.context.object.data)
-           crease_layer = bm.edges.layers.float.get("crease_edge")
-        
-        for e in bm.edges:
-            if e.select:
-                if e[crease_layer] < mytool.vector_creaseProperties[0] + mytool.vector_creaseProperties[2]:
-                    e[crease_layer] = mytool.vector_creaseProperties[1]
-                elif e[crease_layer] > mytool.vector_creaseProperties[1] - mytool.vector_creaseProperties[2]:
-                    e[crease_layer] = mytool.vector_creaseProperties[0]
-
-        bmesh.update_edit_mesh(bpy.context.object.data)
-        bm.free()   
+            bmesh.update_edit_mesh(bpy.context.object.data)
+            bm.free()   
 
         return {"FINISHED"}
 
